@@ -1,6 +1,8 @@
 # passman
 Password manager
 
+ - Requires pycrypto
+
 ```
 usage: passman.py [-h] [-p PASSDB] action ...
 
