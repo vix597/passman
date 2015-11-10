@@ -7,7 +7,7 @@ class AccountExistsError(Exception):
 class AccountDoesNotExistError(Exception):
     pass
 
-class Account:
+class Account:    
     def __init__(self, name, username, password, description=None, url=None):
         self.name = name
         self.username = username
@@ -62,15 +62,8 @@ class PassDb:
         
     def load(self, password):
         if not os.path.exists(self.path):
-            return
-            
-        account_list = json.loads(
-            FileCryptoTool.decrypt_file(
-                password,
-                self.path
-            ).decode('utf-8')
-        )
-        
+            return       
+        account_list = json.loads(FileCryptoTool.decrypt_file(password,self.path).decode('utf-8'))
         for account in account_list:
             self.accounts[account['name']] = Account.from_dict(account)
         
@@ -78,11 +71,9 @@ class PassDb:
         if name not in self.accounts:
             raise AccountDoesNotExistError("No account with name "+name+" in the database.")
         if new_name and new_name in self.accounts:
-            raise AccountExistsError("Cannot change "+name+" to "+new_name+". An account already exists with name: "+new_name)
-        
+            raise AccountExistsError("Cannot change "+name+" to "+new_name+". An account already exists with name: "+new_name) 
         account = self.accounts[name]
-        account.update(new_name, username, password, description, url)
-        
+        account.update(new_name, username, password, description, url)  
         if new_name:
             del self.accounts[name]
             self.accounts[new_name] = account
@@ -90,30 +81,26 @@ class PassDb:
     def remove(self, name):
         if name not in self.accounts:
             raise AccountDoesNotExistError("No account with name: "+name+" in the database.")
-        
         del self.accounts[name]
     
     def add(self, name, username, password, description=None, url=None):
         if name in self.accounts:
             raise AccountExistsError("An account with name "+name+" already exists.")
-        
         self.accounts[name] = Account(name, username, password, description, url)
+        
+    def ls(self):
+        print("Count:",len(self.accounts),"accounts in database.")
+        for account in self.accounts.values():
+            print("Name:",account.name)
     
     def get(self, name):
-        if name in self.accounts:
-            return self.accounts[name]
-        else:
-            return None
-    
-    def list_accounts(self):
-        print("Count:",len(self.accounts),"accounts.")
-        for account in self.accounts.values():
-            account.display()
-            
-    def display_account(self, name, secure=True):
         if name not in self.accounts:
             raise AccountDoesNotExistError("No account with name "+name+" in the database.")
-            
+        return self.accounts[name]
+    
+    def show(self, name, secure=True):
+        if name not in self.accounts:
+            raise AccountDoesNotExistError("No account with name "+name+" in the database.")    
         self.accounts[name].display(secure)
     
     def save(self, password):
@@ -121,9 +108,4 @@ class PassDb:
             account_list = []
             for account in self.accounts.values():
                 account_list.append(account.to_dict())
-        
-            FileCryptoTool.encrypt_file(
-                password, 
-                self.path, 
-                json.dumps(account_list).encode('utf-8')
-            )
+            FileCryptoTool.encrypt_file(password,self.path,json.dumps(account_list).encode('utf-8'))

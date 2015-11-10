@@ -1,168 +1,116 @@
 import argparse
 import os
 import sys
-import json
 import getpass
-import string
-import random
+
+from passgen import PassGen
 from passdb import PassDb, AccountExistsError, AccountDoesNotExistError
-from wizards import account_wizard, generate_password_wizard
 
-def pass_gen(size=15, exclude_chars="", upper_case_count=0):
-    if upper_case_count > size:
-        upper_case_count = size
-    
-    out = ""
-    
-    valid_chars = string.digits+string.ascii_lowercase+string.punctuation
-    valid_chars = ''.join(e for e in valid_chars if e not in exlude_chars)
-    upper_case = string.ascii_upercase
-    
-    if upper_case_count > 0:
-        uc = ''.join(random.choice(upper_case) for x in range(upper_case_count))
-        out ++ uc
-        size -= upper_case_count
+def get_passphrase(first_time=False):
+    if first_time:
+        print(
+            """
+            Enter a passphrase to secure your password list.
+            It is not my job to explain what a good passphrase is.
+            """
+        )
+        passphrase = None
+        check = ""
+        while(passphrase != check):
+            try:
+                passphrase = getpass.getpass("Passphrase:")
+                check = getpass.getpass("Again:")
+            except KeyboardInterrupt:
+                sys.exit(0)
+            if passphrase != check:
+                print("Passphrases don't match. Try again.")
+        return passphrase
     else:
-        valid_chars += string.ascii_uppercase
-        
-    out += ''.join(random.choice(valid_chars) for x in range(size))
-    return out
+        return getpass.getpass("Enter your passphrase:")
 
-def add_account(db):
-    account_wizard.run()
-    generate_password_wizard.run()
+def get_password(size=15,exclude_chars=""):
+    print("Generating password...")
+    while 1:
+        password = PassGen.generate(size=size,exclude_chars=exclude_chars)
+        print(password)
+        check = input("Apply this password to the account? (y,N): ")
+        if check.lower() in ("y","yes"):
+            return password
+
+if __name__ == "__main__":    
+    parser = argparse.ArgumentParser(description="Generate and manage passwords. Passwords are stored in a flat file encrypted with AES-256.")
+    parser.add_argument("-p","--passdb",help="Path to the password list file.",type=str,action="store",default=os.path.join(".","passdb.pm"))
+    subcmd = parser.add_subparsers(title="PassMan Action",metavar="action",help="Password action to perform",dest="action")
+    subcmd.required = True
     
-    name = account_wizard['name'].value
-    username = account_wizard['username'].value
-    description = account_wizard['description'].value
-    url = account_wizard['url'].value
+    list_accounts = subcmd.add_parser("list",help="List the accounts in the database")
     
-    num_upper = generate_password_wizard['password.case.rule'].value
-    exclude = generate_password_wizard['password.disallow.chars'].value
-    size = generate_password_wizard['password.size'].value
-    copy = generate_password_wizard['password.copy'].value
+    show_account = subcmd.add_parser("show",help="Show a specific account")
+    show_account.add_argument("account",metavar="ACCOUNT",action="store",type=str,help="Name of the account to display")
+    show_account.add_argument("-s","--show_all",action="store_true",help="Show all information for the selected account, including cleartext passwords")
     
-    password = pass_gen(size, exclude, num_upper)
-    print("Password is: ",password)
+    add_account = subcmd.add_parser("add",help="Add a new account")
+    add_account.add_argument("account",metavar="ACCOUNT",action="store",type=str,help="Name of the new account to add")
+    add_account.add_argument("username",metavar="USERNAME",action="store",type=str,help="Username for the new account")
+    add_account.add_argument("-d","--description",action="store",type=str,help="Description for the new account",default=None)
+    add_account.add_argument("-u","--url",action="store",type=str,help="URL For the account login page",default=None)
+    add_account.add_argument("-l","--password_length",action="store",type=int,help="Length for the generated password",default=15)
+    add_account.add_argument("-e","--exclude_chars",action="store",type=str,help="List of characters to exclude from the generated password",default="")
     
-    db.add(name, username, password, description, url)
+    edit_account = subcmd.add_parser("edit",help="Edit an existing account")
+    edit_account.add_argument("account",metavar="ACCOUNT",action="store",type=str,help="Name of the account to edit")
     
-def list_accounts(db):
-    db.list_accounts()
-    
-def remove_account(db):
-    name = input("Name of the account to remove: ")
-    check = input("Are you sure you want to continue? This cannot be undone. (y,n)")
-    if check.lower() in ("y","yes"):
-        db.remove(name)
-    
-def edit_account(db):
-    name = input("Name of account to edit: ")
-    account = db.get(name)
-    if not account:
-        print("No account with name of",name,"exists in the database.")
-        return
-    
-    check = input("Modify account details? (not including password) (y,n): ")
-    if check.lower() in ('y','yes'):
-        account_wizard.steps['name'].default = name
-        account_wizard.steps['username'].default=account.username
-        account_wizard.run()
-        
-    check = input("Generate a new password? (y,n): ")
-    if check.lower() in ('y','yes'):
-        generate_password_wizard.run()
-    
-def show_account(db):
-    name = input("Name of the account to show: ")
-    show_pass = input("Include password in output? (y,n): ")
-    if show_pass.lower() in ('y','yes'):
-        secure = False
-    else:
-        secure = True
-    db.display_account(name, secure)
-    
-if __name__ == "__main__":
-    actions = {
-        "add":add_account,
-        "list":list_accounts,
-        "show":show_account,
-        "remove":remove_account,
-        "edit":edit_account
-    }
-    
-    parser = argparse.ArgumentParser(
-        description=
-        """
-        Generate and manage passwords. Passwords are stored 
-        in a flat file encrypted with AES-256. 
-        """
-    )
-    parser.add_argument(
-        "-p",
-        "--passdb",
-        help="Path to the password list file.",
-        type=str,
-        action="store",
-        default=os.path.join(".","passdb.pm")
-    )
-    parser.add_argument(
-        "-a",
-        "--action",
-        help="Specify an action: "+', '.join(actions),
-        type=str,
-        action="store",
-        required=True
-    )
+    remove_account = subcmd.add_parser("remove",help="Remove and existing account")
+    remove_account.add_argument("account",metavar="ACCOUNT",action="store",type=str,help="Name of the account to remove")
     
     args = parser.parse_args()
-    
+   
+    first_time = False
     if not os.path.exists(args.passdb):
+        if args.action == "list" or args.action == "show":
+            print("Passdb has not been created yet. Nothing to list or show.")
+            sys.exit(0)
         print("Passdb path:",args.passdb,"does not exist.")
-        ans = input("Create it? (y,n): ")
-        if ans.lower() in ('y','yes'):
-            print(
-                """
-                Enter a password to secure your password list.
-                A good password is greater than 8 charcters and
-                inludes letters (upper/lower case), numbers, and
-                special characters. That being said, this application
-                does nothing to ensure you're not dumb. 
-                """
-            )
-            password = None
-            check = ""
-            while(password != check):
-                try:
-                    password = getpass.getpass()
-                    check = getpass.getpass("Again:")
-                except KeyboardInterrupt:
-                    sys.exit(0)
-                if password != check:
-                    print("Passwords don't match. Try again.")
-        else:
+        ans = input("Create it? (y,N): ")
+        if ans.lower() not in ('y','yes'):
             print("Goodbye.")
             sys.exit(0)
-            
-    
+        first_time = True
+
+    passphrase = get_passphrase(first_time)
+
     db = PassDb(args.passdb)
-    db.load(password)
+    db.load(passphrase)
     
-    if not args.action in actions:
-        print("Invalid action :",args.action)
+    try:
+        if args.action == "list":
+            db.ls()
+        elif args.action == "show":
+            db.show(args.account, secure=(not args.show_all))
+        elif args.action == "add":
+            password = get_password(size=int(args.password_length),exclude_chars=args.exclude_chars)
+            db.add(args.account,args.username,password,args.description,args.url)
+        elif args.action == "edit":
+            account = db.get(args.account)
+            name = input("Enter the name for the account ["+account.name+"]: ") or account.name
+            username = input("Enter the username for the account ["+account.username+"]: ") or account.username
+            check = input("Generate a new password for the account? (y,N): ")
+            password = account.password
+            if check.lower() in ('y','yes'):
+                length = int(input("Select a new password length [15]: ")) or 15
+                exclude = input("Enter a list of characters to exclude: ") or ""
+                password = get_password(length,exclude)
+            description = input("Enter the description for the account ["+account.description+"]: ") or account.description
+            url = input("Enter the URL for the account ["+account.url+"]: ") or account.url
+            db.update(account,name,username,password,description,url)
+        elif args.action == "remove":
+            db.remove(args.account)
+            
+        if args.action in ("edit","remove","add"):
+            db.save(passphrase)
+    except KeyboardInterrupt:
+        print("Operation canceled. Changes will not be saved.")
+    except (AccountExistsError, AccountDoesNotExistError) as e:
+        print(str(e))
         sys.exit(-1)
-    else:
-        try:
-            actions[args.action](db)
-            db.save(password)
-        except KeyboardInterrupt:
-            pass
-        except AccountExistsError as e:
-            print(str(e))
-            sys.exit(-1)
-        except AccountDoesNotExistError as e:
-            print(str(e))
-            sys.exit(-1)
-        sys.exit(0)
-    
-    
+    sys.exit(0)
