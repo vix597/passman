@@ -6,6 +6,10 @@ class AccountExistsError(Exception):
     pass
 class AccountDoesNotExistError(Exception):
     pass
+class DbLoadError(Exception):
+    pass
+class DbSaveError(Exception):
+    pass
 
 class Account:    
     def __init__(self, name, username, password, description=None, url=None):
@@ -62,8 +66,11 @@ class PassDb:
         
     def load(self, password):
         if not os.path.exists(self.path):
-            return       
-        account_list = json.loads(FileCryptoTool.decrypt_file(password,self.path).decode('utf-8'))
+            return
+        try:       
+            account_list = json.loads(FileCryptoTool.decrypt_file(password,self.path).decode('utf-8'))
+        except Exception as e:
+            raise DbLoadError("Cannot load database file. Did you enter the right passphrase? ("+str(e)+")")
         for account in account_list:
             self.accounts[account['name']] = Account.from_dict(account)
         
@@ -108,4 +115,7 @@ class PassDb:
             account_list = []
             for account in self.accounts.values():
                 account_list.append(account.to_dict())
-            FileCryptoTool.encrypt_file(password,self.path,json.dumps(account_list).encode('utf-8'))
+            try:
+                FileCryptoTool.encrypt_file(password,self.path,json.dumps(account_list).encode('utf-8'))
+            except Exception as e:
+                raise DbSaveError("Cannot save database file: "+str(e))

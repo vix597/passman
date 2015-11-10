@@ -4,7 +4,7 @@ import sys
 import getpass
 
 from passgen import PassGen
-from passdb import PassDb, AccountExistsError, AccountDoesNotExistError
+from passdb import PassDb, AccountExistsError, AccountDoesNotExistError, DbLoadError, DbSaveError
 
 def get_passphrase(first_time=False):
     if first_time:
@@ -78,11 +78,11 @@ if __name__ == "__main__":
         first_time = True
 
     passphrase = get_passphrase(first_time)
-
     db = PassDb(args.passdb)
-    db.load(passphrase)
     
     try:
+        db.load(passphrase)
+        
         if args.action == "list":
             db.ls()
         elif args.action == "show":
@@ -90,27 +90,34 @@ if __name__ == "__main__":
         elif args.action == "add":
             password = get_password(size=int(args.password_length),exclude_chars=args.exclude_chars)
             db.add(args.account,args.username,password,args.description,args.url)
+            print("Account added!")
         elif args.action == "edit":
             account = db.get(args.account)
-            name = input("Enter the name for the account ["+account.name+"]: ") or account.name
-            username = input("Enter the username for the account ["+account.username+"]: ") or account.username
+            name = input("Enter the new name for the account ["+account.name+"]: ") or account.name
+            username = input("Enter the new username for the account ["+account.username+"]: ") or account.username
             check = input("Generate a new password for the account? (y,N): ")
             password = account.password
             if check.lower() in ('y','yes'):
                 length = int(input("Select a new password length [15]: ")) or 15
                 exclude = input("Enter a list of characters to exclude: ") or ""
                 password = get_password(length,exclude)
-            description = input("Enter the description for the account ["+account.description+"]: ") or account.description
-            url = input("Enter the URL for the account ["+account.url+"]: ") or account.url
-            db.update(account,name,username,password,description,url)
+            description = input("Enter the new description for the account ["+account.description+"]: ") or account.description
+            url = input("Enter the new URL for the account ["+account.url+"]: ") or account.url
+            if name == args.account:
+                name = None
+            db.update(args.account,name,username,password,description,url)
+            print("Account updated!")
         elif args.action == "remove":
-            db.remove(args.account)
+            check = input("Are you sure you want to remove "+args.account+"? This action cannot be undone. (y,N): ")
+            if check.lower() in ('y','yes'):
+                db.remove(args.account)
+                print("Account removed!")
             
         if args.action in ("edit","remove","add"):
             db.save(passphrase)
     except KeyboardInterrupt:
         print("Operation canceled. Changes will not be saved.")
-    except (AccountExistsError, AccountDoesNotExistError) as e:
+    except (AccountExistsError, AccountDoesNotExistError, DbLoadError, DbSaveError) as e:
         print(str(e))
         sys.exit(-1)
     sys.exit(0)
