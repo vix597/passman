@@ -2,7 +2,9 @@
 Password manager
 
  - Requires pycrypto
-
+ - Uses AES-256 to encrypt the database file
+ - Uses PBKDF2 wtih 100,000 rounds to generate the encryption key from a passphrase. New salt is generated each time the database is updated.
+ - Requires Python 3.4 (probably works on 3.3 and 3.5)
 ```
 usage: passman.py [-h] [-p PASSDB] action ...
 
