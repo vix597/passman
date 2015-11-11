@@ -100,9 +100,9 @@ class PassDb:
         for account in self.accounts.values():
             print("Name:",account.name)
     
-    def get(self, name):
+    def get(self, name, default=None):
         if name not in self.accounts:
-            raise AccountDoesNotExistError("No account with name "+name+" in the database.")
+            return default
         return self.accounts[name]
     
     def show(self, name, secure=True):

@@ -32,8 +32,8 @@ def get_password(size=15,exclude_chars=""):
     print("Generating password...")
     while 1:
         password = PassGen.generate(size=size,exclude_chars=exclude_chars)
-        print(password)
-        check = input("Apply this password to the account? (y,N): ")
+        print("\n",password,"\n")
+        check = input("Use this password for the new account? (y,N): ")
         if check.lower() in ("y","yes"):
             return password
 
@@ -44,6 +44,8 @@ if __name__ == "__main__":
     subcmd.required = True
     
     list_accounts = subcmd.add_parser("list",help="List the accounts in the database")
+    
+    changep = subcmd.add_parser("changep",help="Change your passphrase")
     
     show_account = subcmd.add_parser("show",help="Show a specific account")
     show_account.add_argument("account",metavar="ACCOUNT",action="store",type=str,help="Name of the account to display")
@@ -67,8 +69,8 @@ if __name__ == "__main__":
    
     first_time = False
     if not os.path.exists(args.passdb):
-        if args.action == "list" or args.action == "show":
-            print("Passdb has not been created yet. Nothing to list or show.")
+        if args.action == "list" or args.action == "show" or args.action == "changep":
+            print("Passdb has not been created yet, cannot ",args.action)
             sys.exit(0)
         print("Passdb path:",args.passdb,"does not exist.")
         ans = input("Create it? (y,N): ")
@@ -81,6 +83,7 @@ if __name__ == "__main__":
     db = PassDb(args.passdb)
     
     try:
+        print("Loading database...")
         db.load(passphrase)
         
         if args.action == "list":
@@ -88,8 +91,12 @@ if __name__ == "__main__":
         elif args.action == "show":
             db.show(args.account, secure=(not args.show_all))
         elif args.action == "add":
-            password = get_password(size=int(args.password_length),exclude_chars=args.exclude_chars)
-            db.add(args.account,args.username,password,args.description,args.url)
+            account = db.get(args.account)
+            if not account:
+                password = get_password(size=int(args.password_length),exclude_chars=args.exclude_chars)
+                db.add(args.account,args.username,password,args.description,args.url)
+            else:
+                raise AccountExistsError("An account with name "+args.account+" already exists in the database.")
             print("Account added!")
         elif args.action == "edit":
             account = db.get(args.account)
@@ -112,11 +119,14 @@ if __name__ == "__main__":
             if check.lower() in ('y','yes'):
                 db.remove(args.account)
                 print("Account removed!")
+        elif args.action == "changep":
+            passphrase = get_passphrase(True)
             
-        if args.action in ("edit","remove","add"):
+        if args.action in ("edit","remove","add","changep"):
+            print("Saving database...")
             db.save(passphrase)
-    except KeyboardInterrupt:
-        print("Operation canceled. Changes will not be saved.")
+    except (KeyboardInterrupt, EOFError):
+        print("\nOperation canceled. Changes will not be saved.")
     except (AccountExistsError, AccountDoesNotExistError, DbLoadError, DbSaveError) as e:
         print(str(e))
         sys.exit(-1)
