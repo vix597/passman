@@ -1,4 +1,4 @@
-# passman
+# PassMan
 Password manager
 
  - Requires pycrypto
@@ -24,3 +24,9 @@ PassMan Action:
     edit                Edit an existing account
     remove              Remove and existing account
 ```
+
+# PassMan GUI
+Password manager GUI in Kivy http://kivy.org/#home
+
+ - Requires Kivy 1.9.0 (http://kivy.org/#download)
+ - Use Kivy-2.7.bat to run
