@@ -8,10 +8,8 @@ class FileCryptoTool:
     ITERATIONS = 100000
     SALT_SIZE = 32
     KEY_SIZE = 32
-    
-    def __init__(self):
-        pass
         
+    @staticmethod
     def encrypt_file(password, path, file_data):
         salt = Random.new().read(FileCryptoTool.SALT_SIZE)
         iv = Random.new().read(FileCryptoTool.IV_SIZE)
@@ -20,7 +18,8 @@ class FileCryptoTool:
         
         with open(path,'wb') as out_file:
             out_file.write(salt + iv + encryptor.encrypt(file_data))
-        
+    
+    @staticmethod 
     def decrypt_file(password, path):
         with open(path,'rb') as in_file:
             salt = in_file.read(FileCryptoTool.SALT_SIZE)
