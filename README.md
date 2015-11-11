@@ -19,6 +19,7 @@ optional arguments:
 PassMan Action:
   action                Password action to perform
     list                List the accounts in the database
+    changep             Change your passphrase
     show                Show a specific account
     add                 Add a new account
     edit                Edit an existing account
