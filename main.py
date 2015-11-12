@@ -1,7 +1,12 @@
+'''
+Use Ubuntu Kivy VM with buildozer to build APK
+'''
 import sys
 import os
 import kivy
 kivy.require('1.9.0')
+
+__version__ = "0.0.1"
 
 from kivy.app import App
 from kivy.uix.button import Button
