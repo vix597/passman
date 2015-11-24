@@ -65,7 +65,14 @@ if __name__ == "__main__":
     remove_account = subcmd.add_parser("remove",help="Remove and existing account")
     remove_account.add_argument("account",metavar="ACCOUNT",action="store",type=str,help="Name of the account to remove")
     
+    gen_pass = subcmd.add_parser("generate",help="Just generate a password. Don't store it anywhere.")
+    gen_pass.add_argument("-l","--password_length",action="store",type=int,help="Length for the generated password",default=15)
+    gen_pass.add_argument("-e","--exclude_chars",action="store",type=str,help="List of characters to exclude from the generated password",default="")
+    
     args = parser.parse_args()
+    if args.action == "generate":
+        get_password(args.password_length,args.exclude_chars)
+        sys.exit(0)
    
     first_time = False
     if not os.path.exists(args.passdb):
