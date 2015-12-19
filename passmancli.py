@@ -28,6 +28,19 @@ def get_passphrase(first_time=False):
     else:
         return getpass.getpass("Enter your passphrase:")
 
+def get_manual_password():
+    check = ""
+    password = None
+    while(password != check):
+        try:
+            password = getpass.getpass("Enter the password for this account: ")
+            check = getpass.getpass("Again: ")
+        except KeyboardInterrupt:
+            sys.exit(0)
+        if password != check:
+            print("Passwords don't match. Try again.")
+    return password
+    
 def get_password(size=15,exclude_chars=""):
     print("Generating password...")
     while 1:
@@ -58,6 +71,7 @@ if __name__ == "__main__":
     add_account.add_argument("-u","--url",action="store",type=str,help="URL For the account login page",default=None)
     add_account.add_argument("-l","--password_length",action="store",type=int,help="Length for the generated password",default=15)
     add_account.add_argument("-e","--exclude_chars",action="store",type=str,help="List of characters to exclude from the generated password",default="")
+    add_account.add_argument("-p","--password",action="store_true",help="Specify the password for the account manually")
     
     edit_account = subcmd.add_parser("edit",help="Edit an existing account")
     edit_account.add_argument("account",metavar="ACCOUNT",action="store",type=str,help="Name of the account to edit")
@@ -100,7 +114,10 @@ if __name__ == "__main__":
         elif args.action == "add":
             account = db.get(args.account)
             if not account:
-                password = get_password(size=int(args.password_length),exclude_chars=args.exclude_chars)
+                if args.password:
+                    password = get_manual_password()
+                else:
+                    password = get_password(size=int(args.password_length),exclude_chars=args.exclude_chars)
                 db.add(args.account,args.username,password,args.description,args.url)
             else:
                 raise AccountExistsError("An account with name "+args.account+" already exists in the database.")
