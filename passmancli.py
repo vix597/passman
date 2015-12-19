@@ -71,7 +71,7 @@ if __name__ == "__main__":
     add_account.add_argument("-u","--url",action="store",type=str,help="URL For the account login page",default=None)
     add_account.add_argument("-l","--password_length",action="store",type=int,help="Length for the generated password",default=15)
     add_account.add_argument("-e","--exclude_chars",action="store",type=str,help="List of characters to exclude from the generated password",default="")
-    add_account.add_argument("-p","--password",action="store_true",help="Specify the password for the account manually")
+    add_account.add_argument("-m","--manual_password",action="store_true",help="Specify the password for the account manually")
     
     edit_account = subcmd.add_parser("edit",help="Edit an existing account")
     edit_account.add_argument("account",metavar="ACCOUNT",action="store",type=str,help="Name of the account to edit")
@@ -114,7 +114,7 @@ if __name__ == "__main__":
         elif args.action == "add":
             account = db.get(args.account)
             if not account:
-                if args.password:
+                if args.manual_password:
                     password = get_manual_password()
                 else:
                     password = get_password(size=int(args.password_length),exclude_chars=args.exclude_chars)
