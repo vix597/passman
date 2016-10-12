@@ -3,8 +3,7 @@ import os
 import sys
 import getpass
 
-from passgen import PassGen
-from passdb import PassDb, AccountExistsError, AccountDoesNotExistError, DbLoadError, DbSaveError
+from pypassman import PassGen, PassDb, AccountExistsError, AccountDoesNotExistError, DbLoadError, DbSaveError
 
 def get_passphrase(first_time=False):
     if first_time:
@@ -41,33 +40,33 @@ def get_manual_password():
             print("Passwords don't match. Try again.")
     return password
     
-def get_password(size=15,exclude_chars=""):
+def get_password(size=15, exclude_chars=""):
     print("Generating password...")
     while 1:
-        password = PassGen.generate(size=size,exclude_chars=exclude_chars)
+        password = PassGen.generate(size=size, exclude_chars=exclude_chars)
         print("\n",password,"\n")
-        check = input("Use this password for the new account? (y,N): ")
+        check = input("Is this one good? (y,N): ")
         if check.lower() in ("y","yes"):
             return password
 
 if __name__ == "__main__":    
     parser = argparse.ArgumentParser(description="Generate and manage passwords. Passwords are stored in a flat file encrypted with AES-256.")
-    parser.add_argument("-p","--passdb",help="Path to the password list file.",type=str,action="store",default=os.path.join(".","passdb.pm"))
-    subcmd = parser.add_subparsers(title="PassMan Action",metavar="action",help="Password action to perform",dest="action")
+    parser.add_argument("-p","--passdb", help="Path to the password list file.", type=str, action="store", default=os.path.join(".", "passdb.pm"))
+    subcmd = parser.add_subparsers(title="PassMan Action", metavar="action", help="Password action to perform", dest="action")
     subcmd.required = True
+
+    list_accounts = subcmd.add_parser("list", help="List the accounts in the database")
     
-    list_accounts = subcmd.add_parser("list",help="List the accounts in the database")
+    changep = subcmd.add_parser("changep", help="Change your passphrase")
     
-    changep = subcmd.add_parser("changep",help="Change your passphrase")
+    show_account = subcmd.add_parser("show", help="Show a specific account")
+    show_account.add_argument("account", metavar="ACCOUNT", action="store", type=str, help="Name of the account to display")
+    show_account.add_argument("-s", "--show_all", action="store_true", help="Show all information for the selected account, including cleartext passwords")
     
-    show_account = subcmd.add_parser("show",help="Show a specific account")
-    show_account.add_argument("account",metavar="ACCOUNT",action="store",type=str,help="Name of the account to display")
-    show_account.add_argument("-s","--show_all",action="store_true",help="Show all information for the selected account, including cleartext passwords")
-    
-    add_account = subcmd.add_parser("add",help="Add a new account")
-    add_account.add_argument("account",metavar="ACCOUNT",action="store",type=str,help="Name of the new account to add")
-    add_account.add_argument("username",metavar="USERNAME",action="store",type=str,help="Username for the new account")
-    add_account.add_argument("-d","--description",action="store",type=str,help="Description for the new account",default=None)
+    add_account = subcmd.add_parser("add", help="Add a new account")
+    add_account.add_argument("account", metavar="ACCOUNT", action="store", type=str, help="Name of the new account to add")
+    add_account.add_argument("username", metavar="USERNAME", action="store", type=str, help="Username for the new account")
+    add_account.add_argument("-d", "--description",action="store",type=str,help="Description for the new account",default=None)
     add_account.add_argument("-u","--url",action="store",type=str,help="URL For the account login page",default=None)
     add_account.add_argument("-l","--password_length",action="store",type=int,help="Length for the generated password",default=15)
     add_account.add_argument("-e","--exclude_chars",action="store",type=str,help="List of characters to exclude from the generated password",default="")
@@ -102,7 +101,7 @@ if __name__ == "__main__":
 
     passphrase = get_passphrase(first_time)
     db = PassDb(args.passdb)
-    
+
     try:
         print("Loading database...")
         db.load(passphrase)

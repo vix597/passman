@@ -1,6 +1,7 @@
 import json
 import os
-from crypt import FileCryptoTool
+
+from pypassman.crypt import FileCryptoTool
 
 class AccountExistsError(Exception):
     pass

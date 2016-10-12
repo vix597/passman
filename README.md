@@ -1,12 +1,12 @@
 # PassMan
-Password manager
+Password manager written in python and java (coming soon, for use as android app)
 
- - Requires pycrypto
+ - `pip install -r requirements.txt` then run `pypassman.py -h`
  - Uses AES-256 to encrypt the database file
- - Uses PBKDF2 wtih 100,000 rounds to generate the encryption key from a passphrase. New salt is generated each time the database is updated.
- - Requires Python >= 3 (Tested with Python 3.4)
+ - Uses PBKDF2 with 100,000 rounds to generate the encryption key from a passphrase. New salt is generated each time the database is updated.
+ - Runs on python 3
 ```
-usage: passman.py [-h] [-p PASSDB] action ...
+usage: pypassmancli.py [-h] [-p PASSDB] action ...
 
 Generate and manage passwords. Passwords are stored in a flat file encrypted
 with AES-256.
@@ -24,10 +24,5 @@ PassMan Action:
     add                 Add a new account
     edit                Edit an existing account
     remove              Remove and existing account
+    generate            Just generate a password. Don't store it anywhere.
 ```
-
-# PassMan GUI
-Password manager GUI in Kivy http://kivy.org/#home
-
- - Requires Kivy 1.9.0 (http://kivy.org/#download)
- - Use Kivy-2.7.bat to run
